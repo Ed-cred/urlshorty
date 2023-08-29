@@ -1,6 +1,7 @@
 package urlshort
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-yaml/yaml"
@@ -40,8 +41,8 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 // See MapHandler to create a similar http.HandlerFunc via
 // a mapping of paths to urls.
 type pathUrl struct {
-	Path string `yaml:"path"`
-	Url  string `yaml:"url"`
+	Path string `yaml:"path" json:"path"`
+	Url  string `yaml:"url" json:"url"`
 }
 
 func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
@@ -50,12 +51,23 @@ func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	if err != nil {
 		return nil, err
 	}
-	pathsToUrls := buildMap(pathUrls)	
+	pathsToUrls := buildMap(pathUrls)
 	return MapHandler(pathsToUrls, fallback), nil
 }
 
+func JSONHandler(jsn []byte, fallback http.Handler) (http.HandlerFunc, error) {
+	pathUrls := []pathUrl{}
+	err := json.Unmarshal(jsn, &pathUrls)
+	if err != nil {
+		return nil, err
+	}
+	pathsToUrls := buildMap(pathUrls)
+	return MapHandler(pathsToUrls, fallback), nil
+}
 
-func buildMap (pathUrl []pathUrl) map[string]string {
+// {"path":"...", "url":"..."},
+
+func buildMap(pathUrl []pathUrl) map[string]string {
 	pathsToUrls := make(map[string]string)
 	for _, pu := range pathUrl {
 		pathsToUrls[pu.Path] = pu.Url
